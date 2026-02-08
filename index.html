@@ -46,22 +46,14 @@
             font-weight: 600;
         }
 
-        .sync-status {
+        .save-status {
             text-align: center;
-            color: #aaa;
+            color: #4ade80;
             font-size: 0.85em;
             margin-bottom: 20px;
             padding: 8px;
             background: #1a1a1a;
             border-radius: 8px;
-        }
-
-        .sync-status.synced {
-            color: #4ade80;
-        }
-
-        .sync-status.error {
-            color: #ff4444;
         }
 
         .speed-inputs {
@@ -398,7 +390,7 @@
     <div class="container">
         <h1>HYROX Race Planner</h1>
         <div class="subtitle">Will & Ross</div>
-        <div class="sync-status" id="sync-status">Loading...</div>
+        <div class="save-status" id="save-status">Data saved locally on this device</div>
 
         <!-- Speed Input Section -->
         <div class="speed-inputs">
@@ -496,10 +488,9 @@
         ];
 
         let kmTimeSeconds = 0;
-        let saveTimeout = null;
 
-        // Cloud storage functions
-        async function saveToCloud() {
+        // Local storage functions
+        function saveData() {
             const data = {
                 speedMph: document.getElementById('speed-mph').value,
                 mileTime: document.getElementById('mile-time').value,
@@ -508,7 +499,6 @@
                 breakdowns: {}
             };
 
-            // Save station times
             raceSegments.forEach((segment, index) => {
                 if (segment.type === 'station') {
                     const timeInput = document.getElementById(`time-${index}`);
@@ -526,25 +516,24 @@
             });
 
             try {
-                await window.storage.set('hyrox-planner-data', JSON.stringify(data), true);
-                updateSyncStatus('Synced', true);
+                localStorage.setItem('hyroxPlannerData', JSON.stringify(data));
+                document.getElementById('save-status').textContent = 'Saved ✓';
+                setTimeout(() => {
+                    document.getElementById('save-status').textContent = 'Data saved locally on this device';
+                }, 2000);
             } catch (error) {
-                console.error('Error saving to cloud:', error);
-                updateSyncStatus('Save failed', false);
+                console.error('Error saving data:', error);
+                document.getElementById('save-status').textContent = 'Save error';
             }
         }
 
-        async function loadFromCloud() {
+        function loadData() {
             try {
-                const result = await window.storage.get('hyrox-planner-data', true);
-                if (!result || !result.value) {
-                    updateSyncStatus('Ready - No saved data', true);
-                    return;
-                }
+                const savedData = localStorage.getItem('hyroxPlannerData');
+                if (!savedData) return;
 
-                const data = JSON.parse(result.value);
+                const data = JSON.parse(savedData);
 
-                // Restore speed inputs
                 if (data.speedMph) document.getElementById('speed-mph').value = data.speedMph;
                 if (data.mileTime) document.getElementById('mile-time').value = data.mileTime;
                 if (data.kmTime) {
@@ -552,7 +541,6 @@
                     updateRunTimes(data.kmTime);
                 }
 
-                // Restore station times and breakdowns
                 if (data.stationTimes) {
                     Object.keys(data.stationTimes).forEach(index => {
                         const timeInput = document.getElementById(`time-${index}`);
@@ -573,25 +561,9 @@
                 }
 
                 calculateTotals();
-                updateSyncStatus('Data loaded', true);
             } catch (error) {
-                console.error('Error loading from cloud:', error);
-                updateSyncStatus('Ready - No saved data', true);
+                console.error('Error loading data:', error);
             }
-        }
-
-        function updateSyncStatus(message, isSuccess) {
-            const statusEl = document.getElementById('sync-status');
-            statusEl.textContent = message;
-            statusEl.className = 'sync-status ' + (isSuccess ? 'synced' : 'error');
-        }
-
-        function debounceSave() {
-            if (saveTimeout) clearTimeout(saveTimeout);
-            updateSyncStatus('Saving...', true);
-            saveTimeout = setTimeout(() => {
-                saveToCloud();
-            }, 1000);
         }
 
         // Increment/Decrement functions
@@ -673,15 +645,14 @@
                 tbody.appendChild(row);
             });
 
-            // Add event listeners to station inputs
+            // Add event listeners
             document.querySelectorAll('.time-input').forEach(input => {
                 input.addEventListener('input', () => {
                     calculateTotals();
-                    debounceSave();
+                    saveData();
                 });
             });
 
-            // Add event listeners to breakdown inputs
             raceSegments.forEach((segment, index) => {
                 if (segment.type === 'station') {
                     const starterSelect = document.getElementById(`starter-${index}`);
@@ -690,13 +661,13 @@
                     if (starterSelect) {
                         starterSelect.addEventListener('change', () => {
                             updateBreakdown(index);
-                            debounceSave();
+                            saveData();
                         });
                     }
                     if (splitInput) {
                         splitInput.addEventListener('input', () => {
                             updateBreakdown(index);
-                            debounceSave();
+                            saveData();
                         });
                     }
                 }
@@ -774,7 +745,7 @@
                 
                 updateRunTimes(kmTime);
             }
-            debounceSave();
+            saveData();
         });
 
         document.getElementById('mile-time').addEventListener('input', function() {
@@ -793,7 +764,7 @@
                 
                 updateRunTimes(kmTime);
             }
-            debounceSave();
+            saveData();
         });
 
         document.getElementById('km-time').addEventListener('input', function() {
@@ -811,7 +782,7 @@
                 
                 updateRunTimes(timeStr);
             }
-            debounceSave();
+            saveData();
         });
 
         // Update all run segment times
@@ -853,7 +824,7 @@
 
         // Initialize the page
         initializeTable();
-        loadFromCloud();
+        loadData();
     </script>
 </body>
 </html>
