@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,9 +41,27 @@
         .subtitle {
             text-align: center;
             color: #FFA500;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             font-size: 1.2em;
             font-weight: 600;
+        }
+
+        .sync-status {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.85em;
+            margin-bottom: 20px;
+            padding: 8px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+
+        .sync-status.synced {
+            color: #4ade80;
+        }
+
+        .sync-status.error {
+            color: #ff4444;
         }
 
         .speed-inputs {
@@ -379,6 +398,7 @@
     <div class="container">
         <h1>HYROX Race Planner</h1>
         <div class="subtitle">Will & Ross</div>
+        <div class="sync-status" id="sync-status">Loading...</div>
 
         <!-- Speed Input Section -->
         <div class="speed-inputs">
@@ -476,6 +496,103 @@
         ];
 
         let kmTimeSeconds = 0;
+        let saveTimeout = null;
+
+        // Cloud storage functions
+        async function saveToCloud() {
+            const data = {
+                speedMph: document.getElementById('speed-mph').value,
+                mileTime: document.getElementById('mile-time').value,
+                kmTime: document.getElementById('km-time').value,
+                stationTimes: {},
+                breakdowns: {}
+            };
+
+            // Save station times
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'station') {
+                    const timeInput = document.getElementById(`time-${index}`);
+                    const starterSelect = document.getElementById(`starter-${index}`);
+                    const splitInput = document.getElementById(`split-${index}`);
+                    
+                    if (timeInput) data.stationTimes[index] = timeInput.value;
+                    if (starterSelect && splitInput) {
+                        data.breakdowns[index] = {
+                            starter: starterSelect.value,
+                            split: splitInput.value
+                        };
+                    }
+                }
+            });
+
+            try {
+                await window.storage.set('hyrox-planner-data', JSON.stringify(data), true);
+                updateSyncStatus('Synced', true);
+            } catch (error) {
+                console.error('Error saving to cloud:', error);
+                updateSyncStatus('Save failed', false);
+            }
+        }
+
+        async function loadFromCloud() {
+            try {
+                const result = await window.storage.get('hyrox-planner-data', true);
+                if (!result || !result.value) {
+                    updateSyncStatus('Ready - No saved data', true);
+                    return;
+                }
+
+                const data = JSON.parse(result.value);
+
+                // Restore speed inputs
+                if (data.speedMph) document.getElementById('speed-mph').value = data.speedMph;
+                if (data.mileTime) document.getElementById('mile-time').value = data.mileTime;
+                if (data.kmTime) {
+                    document.getElementById('km-time').value = data.kmTime;
+                    updateRunTimes(data.kmTime);
+                }
+
+                // Restore station times and breakdowns
+                if (data.stationTimes) {
+                    Object.keys(data.stationTimes).forEach(index => {
+                        const timeInput = document.getElementById(`time-${index}`);
+                        if (timeInput) timeInput.value = data.stationTimes[index];
+                    });
+                }
+
+                if (data.breakdowns) {
+                    Object.keys(data.breakdowns).forEach(index => {
+                        const starterSelect = document.getElementById(`starter-${index}`);
+                        const splitInput = document.getElementById(`split-${index}`);
+                        
+                        if (starterSelect) starterSelect.value = data.breakdowns[index].starter;
+                        if (splitInput) splitInput.value = data.breakdowns[index].split;
+                        
+                        updateBreakdown(parseInt(index));
+                    });
+                }
+
+                calculateTotals();
+                updateSyncStatus('Data loaded', true);
+            } catch (error) {
+                console.error('Error loading from cloud:', error);
+                updateSyncStatus('Ready - No saved data', true);
+            }
+        }
+
+        function updateSyncStatus(message, isSuccess) {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.textContent = message;
+            statusEl.className = 'sync-status ' + (isSuccess ? 'synced' : 'error');
+        }
+
+        function debounceSave() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            updateSyncStatus('Saving...', true);
+            saveTimeout = setTimeout(() => {
+                saveToCloud();
+            }, 1000);
+        }
 
         // Increment/Decrement functions
         function adjustSpeed(change) {
@@ -558,7 +675,10 @@
 
             // Add event listeners to station inputs
             document.querySelectorAll('.time-input').forEach(input => {
-                input.addEventListener('input', calculateTotals);
+                input.addEventListener('input', () => {
+                    calculateTotals();
+                    debounceSave();
+                });
             });
 
             // Add event listeners to breakdown inputs
@@ -568,10 +688,16 @@
                     const splitInput = document.getElementById(`split-${index}`);
                     
                     if (starterSelect) {
-                        starterSelect.addEventListener('change', () => updateBreakdown(index));
+                        starterSelect.addEventListener('change', () => {
+                            updateBreakdown(index);
+                            debounceSave();
+                        });
                     }
                     if (splitInput) {
-                        splitInput.addEventListener('input', () => updateBreakdown(index));
+                        splitInput.addEventListener('input', () => {
+                            updateBreakdown(index);
+                            debounceSave();
+                        });
                     }
                 }
             });
@@ -648,6 +774,7 @@
                 
                 updateRunTimes(kmTime);
             }
+            debounceSave();
         });
 
         document.getElementById('mile-time').addEventListener('input', function() {
@@ -666,6 +793,7 @@
                 
                 updateRunTimes(kmTime);
             }
+            debounceSave();
         });
 
         document.getElementById('km-time').addEventListener('input', function() {
@@ -683,6 +811,7 @@
                 
                 updateRunTimes(timeStr);
             }
+            debounceSave();
         });
 
         // Update all run segment times
@@ -722,106 +851,9 @@
             document.getElementById('total-race-time').textContent = secondsToTime(totalRaceSeconds);
         }
 
-        // Save data to localStorage
-        function saveData() {
-            const data = {
-                speedMph: document.getElementById('speed-mph').value,
-                mileTime: document.getElementById('mile-time').value,
-                kmTime: document.getElementById('km-time').value,
-                stationTimes: {},
-                breakdowns: {}
-            };
-
-            // Save station times
-            raceSegments.forEach((segment, index) => {
-                if (segment.type === 'station') {
-                    const timeInput = document.getElementById(`time-${index}`);
-                    const starterSelect = document.getElementById(`starter-${index}`);
-                    const splitInput = document.getElementById(`split-${index}`);
-                    
-                    if (timeInput) data.stationTimes[index] = timeInput.value;
-                    if (starterSelect && splitInput) {
-                        data.breakdowns[index] = {
-                            starter: starterSelect.value,
-                            split: splitInput.value
-                        };
-                    }
-                }
-            });
-
-            localStorage.setItem('hyroxPlannerData', JSON.stringify(data));
-        }
-
-        // Load data from localStorage
-        function loadData() {
-            const savedData = localStorage.getItem('hyroxPlannerData');
-            if (!savedData) return;
-
-            try {
-                const data = JSON.parse(savedData);
-
-                // Restore speed inputs
-                if (data.speedMph) document.getElementById('speed-mph').value = data.speedMph;
-                if (data.mileTime) document.getElementById('mile-time').value = data.mileTime;
-                if (data.kmTime) {
-                    document.getElementById('km-time').value = data.kmTime;
-                    updateRunTimes(data.kmTime);
-                }
-
-                // Restore station times and breakdowns
-                if (data.stationTimes) {
-                    Object.keys(data.stationTimes).forEach(index => {
-                        const timeInput = document.getElementById(`time-${index}`);
-                        if (timeInput) timeInput.value = data.stationTimes[index];
-                    });
-                }
-
-                if (data.breakdowns) {
-                    Object.keys(data.breakdowns).forEach(index => {
-                        const starterSelect = document.getElementById(`starter-${index}`);
-                        const splitInput = document.getElementById(`split-${index}`);
-                        
-                        if (starterSelect) starterSelect.value = data.breakdowns[index].starter;
-                        if (splitInput) splitInput.value = data.breakdowns[index].split;
-                        
-                        updateBreakdown(parseInt(index));
-                    });
-                }
-
-                calculateTotals();
-            } catch (error) {
-                console.error('Error loading saved data:', error);
-            }
-        }
-
-        // Add save listeners to all inputs
-        function addSaveListeners() {
-            // Save on pace input changes
-            document.getElementById('speed-mph').addEventListener('input', saveData);
-            document.getElementById('mile-time').addEventListener('input', saveData);
-            document.getElementById('km-time').addEventListener('input', saveData);
-
-            // Save on station time changes
-            document.querySelectorAll('.time-input').forEach(input => {
-                input.addEventListener('input', saveData);
-            });
-
-            // Save on breakdown changes
-            raceSegments.forEach((segment, index) => {
-                if (segment.type === 'station') {
-                    const starterSelect = document.getElementById(`starter-${index}`);
-                    const splitInput = document.getElementById(`split-${index}`);
-                    
-                    if (starterSelect) starterSelect.addEventListener('change', saveData);
-                    if (splitInput) splitInput.addEventListener('input', saveData);
-                }
-            });
-        }
-
         // Initialize the page
         initializeTable();
-        addSaveListeners();
-        loadData();
+        loadFromCloud();
     </script>
 </body>
 </html>
