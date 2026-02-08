@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Will & Ross - HYROX Race Planner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border: 3px solid #FFA500;
+        }
+
+        h1 {
+            text-align: center;
+            color: #FFEB3B;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #FFA500;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .speed-inputs {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.2);
+            border: 2px solid #FFA500;
+        }
+
+        .speed-inputs h2 {
+            color: #FFEB3B;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .speed-control {
+            position: relative;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 2px solid #FFA500;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .speed-control input {
+            padding-right: 90px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #FFEB3B;
+            box-shadow: 0 0 0 3px rgba(255, 235, 59, 0.2);
+        }
+
+        .increment-buttons {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+        }
+
+        .increment-btn {
+            width: 38px;
+            height: 38px;
+            border: 2px solid #1a1a1a;
+            background: #FFA500;
+            color: #1a1a1a;
+            border-radius: 6px;
+            font-size: 1.4em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .increment-btn:hover {
+            background: #FFEB3B;
+            color: #1a1a1a;
+            transform: scale(1.05);
+        }
+
+        .increment-btn:active {
+            transform: scale(0.95);
+        }
+
+        .race-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .race-table th {
+            background: #1a1a1a;
+            color: #FFEB3B;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1em;
+            border: 2px solid #FFA500;
+            text-transform: uppercase;
+        }
+
+        .race-table td {
+            padding: 15px;
+            border-bottom: 1px solid #444;
+            color: white;
+        }
+
+        .race-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .race-table tr:hover {
+            background-color: #3a3a3a;
+        }
+
+        .segment-number {
+            font-weight: 700;
+            color: #FFEB3B;
+            font-size: 1.1em;
+            width: 50px;
+        }
+
+        .segment-name {
+            font-weight: 600;
+            color: white;
+            min-width: 180px;
+        }
+
+        .segment-details {
+            color: #aaa;
+            font-style: italic;
+            min-width: 120px;
+        }
+
+        .run-segment {
+            background-color: #2d2d2d;
+        }
+
+        .station-segment {
+            background-color: #3a3a3a;
+        }
+
+        .time-input {
+            width: 120px;
+            padding: 8px;
+            border: 2px solid #FFA500;
+            border-radius: 6px;
+            font-size: 0.95em;
+            text-align: center;
+            transition: border-color 0.3s;
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: #FFEB3B;
+            box-shadow: 0 0 0 2px rgba(255, 235, 59, 0.2);
+        }
+
+        .time-display {
+            font-weight: 600;
+            color: #FFEB3B;
+            font-size: 1em;
+        }
+
+        .workout-breakdown {
+            margin-top: 10px;
+            padding: 15px;
+            background: #2d2d2d;
+            border: 2px solid #FFA500;
+            border-radius: 8px;
+        }
+
+        .workout-breakdown h4 {
+            color: #FFEB3B;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .partner-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .partner-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .partner-input label {
+            font-size: 0.85em;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .partner-input select,
+        .partner-input input {
+            padding: 6px;
+            border: 1px solid #FFA500;
+            border-radius: 4px;
+            font-size: 0.85em;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .partner-input input {
+            width: 80px;
+        }
+
+        .breakdown-display {
+            margin-top: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            border-left: 4px solid #FFA500;
+        }
+
+        .breakdown-display .partner-line {
+            font-size: 0.9em;
+            color: white;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .breakdown-display .partner-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .breakdown-display .partner-name {
+            color: #FFEB3B;
+            font-weight: 700;
+        }
+
+        .breakdown-display .partner-amount {
+            color: #FFA500;
+            font-weight: 600;
+        }
+
+        .total-summary {
+            background: #1a1a1a;
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(255, 165, 0, 0.3);
+            border: 3px solid #FFA500;
+        }
+
+        .total-summary h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #FFEB3B;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            background: #2d2d2d;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #FFA500;
+        }
+
+        .summary-item.total-race {
+            background: linear-gradient(135deg, #FF6B00 0%, #FFA500 100%);
+            border: 3px solid #FFEB3B;
+            box-shadow: 0 5px 20px rgba(255, 165, 0, 0.5);
+            transform: scale(1.05);
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #FFEB3B;
+        }
+
+        .summary-item.total-race .summary-label {
+            color: white;
+        }
+
+        .summary-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #FFA500;
+        }
+
+        .summary-item.total-race .summary-value {
+            color: white;
+            font-size: 2.5em;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #aaa;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HYROX Race Planner</h1>
+        <div class="subtitle">Will & Ross</div>
+
+        <!-- Speed Input Section -->
+        <div class="speed-inputs">
+            <h2>Running Pace Calculator</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="speed-mph">Speed (mph)</label>
+                    <div class="speed-control">
+                        <input type="number" id="speed-mph" step="0.1" placeholder="e.g., 6.0">
+                        <div class="increment-buttons">
+                            <button class="increment-btn" onclick="adjustSpeed(-0.1)">−</button>
+                            <button class="increment-btn" onclick="adjustSpeed(0.1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="mile-time">1 Mile Time (mm:ss)</label>
+                    <div class="speed-control">
+                        <input type="text" id="mile-time" placeholder="e.g., 10:00">
+                        <div class="increment-buttons">
+                            <button class="increment-btn" onclick="adjustMileTime(-10)">−</button>
+                            <button class="increment-btn" onclick="adjustMileTime(10)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="km-time">1 KM Time (mm:ss)</label>
+                    <div class="speed-control">
+                        <input type="text" id="km-time" placeholder="e.g., 6:13">
+                        <div class="increment-buttons">
+                            <button class="increment-btn" onclick="adjustKmTime(-10)">−</button>
+                            <button class="increment-btn" onclick="adjustKmTime(10)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="info-text">Fill in any one field and the others will calculate automatically</div>
+        </div>
+
+        <!-- Race Table -->
+        <table class="race-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Segment</th>
+                    <th>Details</th>
+                    <th>Estimated Time</th>
+                </tr>
+            </thead>
+            <tbody id="race-table-body">
+                <!-- Table rows will be generated by JavaScript -->
+            </tbody>
+        </table>
+
+        <!-- Total Summary -->
+        <div class="total-summary">
+            <h2>Race Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">Total Running Time</div>
+                    <div class="summary-value" id="total-run-time">--:--</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Station Time</div>
+                    <div class="summary-value" id="total-station-time">--:--</div>
+                </div>
+                <div class="summary-item total-race">
+                    <div class="summary-label">Total Race Time</div>
+                    <div class="summary-value" id="total-race-time">--:--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Race segments data
+        const raceSegments = [
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'SkiErg', distance: '1000', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Sled Push', distance: '50', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Sled Pull', distance: '50', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Burpee Broad Jump', distance: '80', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Row', distance: '1000', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Farmer\'s Carry', distance: '200', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Sandbag Lunges', distance: '100', unit: 'm' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' },
+            { type: 'station', name: 'Wall Balls', distance: '100', unit: 'reps' },
+            { type: 'run', name: '1 KM Run', distance: '1 km' }
+        ];
+
+        let kmTimeSeconds = 0;
+
+        // Increment/Decrement functions
+        function adjustSpeed(change) {
+            const input = document.getElementById('speed-mph');
+            const currentValue = parseFloat(input.value) || 0;
+            const newValue = Math.max(0, currentValue + change);
+            input.value = newValue.toFixed(1);
+            input.dispatchEvent(new Event('input'));
+        }
+
+        function adjustMileTime(changeSeconds) {
+            const input = document.getElementById('mile-time');
+            const currentSeconds = timeToSeconds(input.value);
+            const newSeconds = Math.max(0, currentSeconds + changeSeconds);
+            input.value = secondsToTime(newSeconds);
+            input.dispatchEvent(new Event('input'));
+        }
+
+        function adjustKmTime(changeSeconds) {
+            const input = document.getElementById('km-time');
+            const currentSeconds = timeToSeconds(input.value);
+            const newSeconds = Math.max(0, currentSeconds + changeSeconds);
+            input.value = secondsToTime(newSeconds);
+            input.dispatchEvent(new Event('input'));
+        }
+
+        // Initialize the table
+        function initializeTable() {
+            const tbody = document.getElementById('race-table-body');
+            tbody.innerHTML = '';
+
+            raceSegments.forEach((segment, index) => {
+                const row = document.createElement('tr');
+                row.className = segment.type === 'run' ? 'run-segment' : 'station-segment';
+                
+                if (segment.type === 'run') {
+                    row.innerHTML = `
+                        <td class="segment-number">${index + 1}</td>
+                        <td class="segment-name">${segment.name}</td>
+                        <td class="segment-details">${segment.distance}</td>
+                        <td>
+                            <span class="time-display" id="time-${index}">--:--</span>
+                        </td>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <td class="segment-number">${index + 1}</td>
+                        <td class="segment-name" colspan="3">
+                            <div>
+                                <strong>${segment.name}</strong> - ${segment.distance}${segment.unit}
+                                <div style="margin-top: 5px;">
+                                    <input type="text" class="time-input" id="time-${index}" placeholder="mm:ss" data-index="${index}" style="margin-bottom: 5px;">
+                                </div>
+                            </div>
+                            <div class="workout-breakdown">
+                                <h4>Partner Breakdown</h4>
+                                <div class="partner-split">
+                                    <div class="partner-input">
+                                        <label>Who starts?</label>
+                                        <select id="starter-${index}">
+                                            <option value="Will">Will</option>
+                                            <option value="Ross">Ross</option>
+                                        </select>
+                                    </div>
+                                    <div class="partner-input">
+                                        <label>First person does (${segment.unit}):</label>
+                                        <input type="number" id="split-${index}" placeholder="e.g., 50" min="0">
+                                    </div>
+                                </div>
+                                <div class="breakdown-display" id="breakdown-display-${index}" style="display: none;">
+                                    <!-- Breakdown will be inserted here -->
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                }
+                
+                tbody.appendChild(row);
+            });
+
+            // Add event listeners to station inputs
+            document.querySelectorAll('.time-input').forEach(input => {
+                input.addEventListener('input', calculateTotals);
+            });
+
+            // Add event listeners to breakdown inputs
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'station') {
+                    const starterSelect = document.getElementById(`starter-${index}`);
+                    const splitInput = document.getElementById(`split-${index}`);
+                    
+                    if (starterSelect) {
+                        starterSelect.addEventListener('change', () => updateBreakdown(index));
+                    }
+                    if (splitInput) {
+                        splitInput.addEventListener('input', () => updateBreakdown(index));
+                    }
+                }
+            });
+        }
+
+        // Update breakdown display
+        function updateBreakdown(index) {
+            const segment = raceSegments[index];
+            const starter = document.getElementById(`starter-${index}`).value;
+            const firstPersonAmount = parseFloat(document.getElementById(`split-${index}`).value) || 0;
+            const display = document.getElementById(`breakdown-display-${index}`);
+            
+            if (!display) return;
+            
+            if (firstPersonAmount === 0) {
+                display.style.display = 'none';
+                return;
+            }
+            
+            const secondPerson = starter === 'Will' ? 'Ross' : 'Will';
+            const totalAmount = parseFloat(segment.distance);
+            const secondPersonAmount = totalAmount - firstPersonAmount;
+            
+            if (secondPersonAmount < 0) {
+                display.style.display = 'block';
+                display.innerHTML = `<div class="partner-line" style="color: #ff4444;">⚠️ Split exceeds total ${segment.distance}${segment.unit}</div>`;
+            } else {
+                display.style.display = 'block';
+                display.innerHTML = `
+                    <div class="partner-line">
+                        <span class="partner-name">${starter}:</span>
+                        <span class="partner-amount">${firstPersonAmount} ${segment.unit}</span>
+                    </div>
+                    <div class="partner-line">
+                        <span class="partner-name">${secondPerson}:</span>
+                        <span class="partner-amount">${secondPersonAmount} ${segment.unit}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Convert time string (mm:ss) to seconds
+        function timeToSeconds(timeStr) {
+            if (!timeStr || timeStr === '--:--') return 0;
+            const parts = timeStr.split(':');
+            if (parts.length !== 2) return 0;
+            const minutes = parseInt(parts[0]) || 0;
+            const seconds = parseInt(parts[1]) || 0;
+            return minutes * 60 + seconds;
+        }
+
+        // Convert seconds to time string (mm:ss)
+        function secondsToTime(seconds) {
+            if (seconds === 0) return '--:--';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update running pace inputs
+        document.getElementById('speed-mph').addEventListener('input', function() {
+            const mph = parseFloat(this.value);
+            if (mph && mph > 0) {
+                const mileMinutes = 60 / mph;
+                const mileMins = Math.floor(mileMinutes);
+                const mileSecs = Math.round((mileMinutes - mileMins) * 60);
+                document.getElementById('mile-time').value = `${mileMins}:${mileSecs.toString().padStart(2, '0')}`;
+                
+                const kmMinutes = mileMinutes * 0.621371;
+                const kmMins = Math.floor(kmMinutes);
+                const kmSecs = Math.round((kmMinutes - kmMins) * 60);
+                const kmTime = `${kmMins}:${kmSecs.toString().padStart(2, '0')}`;
+                document.getElementById('km-time').value = kmTime;
+                
+                updateRunTimes(kmTime);
+            }
+        });
+
+        document.getElementById('mile-time').addEventListener('input', function() {
+            const timeStr = this.value;
+            const seconds = timeToSeconds(timeStr);
+            if (seconds > 0) {
+                const mileMinutes = seconds / 60;
+                const mph = 60 / mileMinutes;
+                document.getElementById('speed-mph').value = mph.toFixed(2);
+                
+                const kmMinutes = mileMinutes * 0.621371;
+                const kmMins = Math.floor(kmMinutes);
+                const kmSecs = Math.round((kmMinutes - kmMins) * 60);
+                const kmTime = `${kmMins}:${kmSecs.toString().padStart(2, '0')}`;
+                document.getElementById('km-time').value = kmTime;
+                
+                updateRunTimes(kmTime);
+            }
+        });
+
+        document.getElementById('km-time').addEventListener('input', function() {
+            const timeStr = this.value;
+            const seconds = timeToSeconds(timeStr);
+            if (seconds > 0) {
+                const kmMinutes = seconds / 60;
+                const mileMinutes = kmMinutes / 0.621371;
+                const mileMins = Math.floor(mileMinutes);
+                const mileSecs = Math.round((mileMinutes - mileMins) * 60);
+                document.getElementById('mile-time').value = `${mileMins}:${mileSecs.toString().padStart(2, '0')}`;
+                
+                const mph = 60 / mileMinutes;
+                document.getElementById('speed-mph').value = mph.toFixed(2);
+                
+                updateRunTimes(timeStr);
+            }
+        });
+
+        // Update all run segment times
+        function updateRunTimes(kmTime) {
+            kmTimeSeconds = timeToSeconds(kmTime);
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'run') {
+                    const timeDisplay = document.getElementById(`time-${index}`);
+                    if (timeDisplay) {
+                        timeDisplay.textContent = kmTime;
+                    }
+                }
+            });
+            calculateTotals();
+        }
+
+        // Calculate and display totals
+        function calculateTotals() {
+            let totalRunSeconds = 0;
+            let totalStationSeconds = 0;
+
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'run') {
+                    totalRunSeconds += kmTimeSeconds;
+                } else {
+                    const input = document.getElementById(`time-${index}`);
+                    if (input && input.value) {
+                        totalStationSeconds += timeToSeconds(input.value);
+                    }
+                }
+            });
+
+            const totalRaceSeconds = totalRunSeconds + totalStationSeconds;
+
+            document.getElementById('total-run-time').textContent = secondsToTime(totalRunSeconds);
+            document.getElementById('total-station-time').textContent = secondsToTime(totalStationSeconds);
+            document.getElementById('total-race-time').textContent = secondsToTime(totalRaceSeconds);
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            const data = {
+                speedMph: document.getElementById('speed-mph').value,
+                mileTime: document.getElementById('mile-time').value,
+                kmTime: document.getElementById('km-time').value,
+                stationTimes: {},
+                breakdowns: {}
+            };
+
+            // Save station times
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'station') {
+                    const timeInput = document.getElementById(`time-${index}`);
+                    const starterSelect = document.getElementById(`starter-${index}`);
+                    const splitInput = document.getElementById(`split-${index}`);
+                    
+                    if (timeInput) data.stationTimes[index] = timeInput.value;
+                    if (starterSelect && splitInput) {
+                        data.breakdowns[index] = {
+                            starter: starterSelect.value,
+                            split: splitInput.value
+                        };
+                    }
+                }
+            });
+
+            localStorage.setItem('hyroxPlannerData', JSON.stringify(data));
+        }
+
+        // Load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('hyroxPlannerData');
+            if (!savedData) return;
+
+            try {
+                const data = JSON.parse(savedData);
+
+                // Restore speed inputs
+                if (data.speedMph) document.getElementById('speed-mph').value = data.speedMph;
+                if (data.mileTime) document.getElementById('mile-time').value = data.mileTime;
+                if (data.kmTime) {
+                    document.getElementById('km-time').value = data.kmTime;
+                    updateRunTimes(data.kmTime);
+                }
+
+                // Restore station times and breakdowns
+                if (data.stationTimes) {
+                    Object.keys(data.stationTimes).forEach(index => {
+                        const timeInput = document.getElementById(`time-${index}`);
+                        if (timeInput) timeInput.value = data.stationTimes[index];
+                    });
+                }
+
+                if (data.breakdowns) {
+                    Object.keys(data.breakdowns).forEach(index => {
+                        const starterSelect = document.getElementById(`starter-${index}`);
+                        const splitInput = document.getElementById(`split-${index}`);
+                        
+                        if (starterSelect) starterSelect.value = data.breakdowns[index].starter;
+                        if (splitInput) splitInput.value = data.breakdowns[index].split;
+                        
+                        updateBreakdown(parseInt(index));
+                    });
+                }
+
+                calculateTotals();
+            } catch (error) {
+                console.error('Error loading saved data:', error);
+            }
+        }
+
+        // Add save listeners to all inputs
+        function addSaveListeners() {
+            // Save on pace input changes
+            document.getElementById('speed-mph').addEventListener('input', saveData);
+            document.getElementById('mile-time').addEventListener('input', saveData);
+            document.getElementById('km-time').addEventListener('input', saveData);
+
+            // Save on station time changes
+            document.querySelectorAll('.time-input').forEach(input => {
+                input.addEventListener('input', saveData);
+            });
+
+            // Save on breakdown changes
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'station') {
+                    const starterSelect = document.getElementById(`starter-${index}`);
+                    const splitInput = document.getElementById(`split-${index}`);
+                    
+                    if (starterSelect) starterSelect.addEventListener('change', saveData);
+                    if (splitInput) splitInput.addEventListener('input', saveData);
+                }
+            });
+        }
+
+        // Initialize the page
+        initializeTable();
+        addSaveListeners();
+        loadData();
+    </script>
+</body>
+</html>
