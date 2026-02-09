@@ -101,8 +101,8 @@
             border-radius: 8px;
             font-size: 1em;
             transition: all 0.3s;
-            background: #2d2d2d;
-            color: white;
+            background: #e0e0e0;
+            color: #000000;
         }
 
         .speed-control input {
@@ -220,8 +220,8 @@
             font-size: 0.95em;
             text-align: center;
             transition: border-color 0.3s;
-            background: #2d2d2d;
-            color: white;
+            background: #e0e0e0;
+            color: #000000;
         }
 
         .time-input:focus {
@@ -276,8 +276,8 @@
             border: 1px solid #FFA500;
             border-radius: 4px;
             font-size: 0.85em;
-            background: #1a1a1a;
-            color: white;
+            background: #e0e0e0;
+            color: #000000;
         }
 
         .partner-input input {
@@ -384,6 +384,130 @@
             margin-top: 10px;
             font-size: 0.9em;
         }
+
+        .export-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #FFEB3B 0%, #FFA500 100%);
+            color: #1a1a1a;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .export-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 165, 0, 0.5);
+        }
+
+        .export-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .export-modal.active {
+            display: flex;
+        }
+
+        .export-content {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            border: 3px solid #FFA500;
+        }
+
+        .export-content h2 {
+            color: #FFEB3B;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .export-content textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            background: #1a1a1a;
+            color: white;
+            border: 2px solid #FFA500;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            resize: vertical;
+        }
+
+        .export-content input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            background: #e0e0e0;
+            color: #000000;
+            border: 2px solid #FFA500;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .export-buttons button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn {
+            background: #4ade80;
+            color: #1a1a1a;
+        }
+
+        .send-btn:hover {
+            background: #22c55e;
+        }
+
+        .copy-btn {
+            background: #FFA500;
+            color: #1a1a1a;
+        }
+
+        .copy-btn:hover {
+            background: #FFEB3B;
+        }
+
+        .close-btn {
+            background: #6b7280;
+            color: white;
+        }
+
+        .close-btn:hover {
+            background: #4b5563;
+        }
     </style>
 </head>
 <body>
@@ -463,6 +587,25 @@
                 </div>
             </div>
         </div>
+
+        <!-- Export Section -->
+        <div class="export-section">
+            <button class="export-btn" onclick="openExportModal()">Export Race Plan</button>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="export-modal" id="export-modal">
+        <div class="export-content">
+            <h2>Export Race Plan</h2>
+            <textarea id="export-text" readonly></textarea>
+            <input type="email" id="email-input" placeholder="Enter your email address">
+            <div class="export-buttons">
+                <button class="send-btn" onclick="sendEmail()">Send Email</button>
+                <button class="copy-btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+                <button class="close-btn" onclick="closeExportModal()">Close</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -483,8 +626,7 @@
             { type: 'run', name: '1 KM Run', distance: '1 km' },
             { type: 'station', name: 'Sandbag Lunges', distance: '100', unit: 'm' },
             { type: 'run', name: '1 KM Run', distance: '1 km' },
-            { type: 'station', name: 'Wall Balls', distance: '100', unit: 'reps' },
-            { type: 'run', name: '1 KM Run', distance: '1 km' }
+            { type: 'station', name: 'Wall Balls', distance: '100', unit: 'reps' }
         ];
 
         let kmTimeSeconds = 0;
@@ -710,13 +852,16 @@
             }
         }
 
-        // Convert time string (mm:ss) to seconds
+        // Convert time string (mm:ss or mm.ss) to seconds
         function timeToSeconds(timeStr) {
             if (!timeStr || timeStr === '--:--') return 0;
-            const parts = timeStr.split(':');
+            
+            // Handle both : and . as separators
+            const parts = timeStr.split(/[:.]/);
             if (parts.length !== 2) return 0;
+            
             const minutes = parseInt(parts[0]) || 0;
-            const seconds = parseInt(parts[1]) || 0;
+            const seconds = parseFloat(parts[1]) || 0;
             return minutes * 60 + seconds;
         }
 
@@ -727,6 +872,99 @@
             const secs = Math.floor(seconds % 60);
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
+
+        // Export functions
+        function generateExportText() {
+            let exportText = "HYROX RACE PLAN - WILL & ROSS\n";
+            exportText += "=" .repeat(50) + "\n\n";
+            
+            // Assumptions
+            exportText += "RUNNING PACE:\n";
+            exportText += "-".repeat(50) + "\n";
+            const speedMph = document.getElementById('speed-mph').value || 'Not set';
+            const mileTime = document.getElementById('mile-time').value || 'Not set';
+            const kmTime = document.getElementById('km-time').value || 'Not set';
+            exportText += `Speed: ${speedMph} mph\n`;
+            exportText += `1 Mile Time: ${mileTime}\n`;
+            exportText += `1 KM Time: ${kmTime}\n\n`;
+            
+            // Station times
+            exportText += "STATION TIMES:\n";
+            exportText += "-".repeat(50) + "\n";
+            
+            let stationNumber = 1;
+            raceSegments.forEach((segment, index) => {
+                if (segment.type === 'station') {
+                    const timeInput = document.getElementById(`time-${index}`);
+                    const time = timeInput && timeInput.value ? timeInput.value : 'Not set';
+                    
+                    // Add partner breakdown if available
+                    const starterSelect = document.getElementById(`starter-${index}`);
+                    const splitInput = document.getElementById(`split-${index}`);
+                    let breakdown = '';
+                    
+                    if (starterSelect && splitInput && splitInput.value) {
+                        const starter = starterSelect.value;
+                        const secondPerson = starter === 'Will' ? 'Ross' : 'Will';
+                        const firstAmount = splitInput.value;
+                        const totalAmount = parseFloat(segment.distance);
+                        const secondAmount = totalAmount - parseFloat(firstAmount);
+                        breakdown = ` (${starter}: ${firstAmount}${segment.unit}, ${secondPerson}: ${secondAmount}${segment.unit})`;
+                    }
+                    
+                    exportText += `${stationNumber}. ${segment.name} - ${segment.distance}${segment.unit}: ${time}${breakdown}\n`;
+                    stationNumber++;
+                }
+            });
+            
+            exportText += "\n";
+            exportText += "RACE SUMMARY:\n";
+            exportText += "-".repeat(50) + "\n";
+            exportText += `Total Running Time (8 x 1km): ${document.getElementById('total-run-time').textContent}\n`;
+            exportText += `Total Station Time: ${document.getElementById('total-station-time').textContent}\n`;
+            exportText += `Total Race Time: ${document.getElementById('total-race-time').textContent}\n`;
+            
+            return exportText;
+        }
+
+        function openExportModal() {
+            const exportText = generateExportText();
+            document.getElementById('export-text').value = exportText;
+            document.getElementById('export-modal').classList.add('active');
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.remove('active');
+        }
+
+        function copyToClipboard() {
+            const exportText = document.getElementById('export-text');
+            exportText.select();
+            document.execCommand('copy');
+            alert('Race plan copied to clipboard!');
+        }
+
+        function sendEmail() {
+            const email = document.getElementById('email-input').value;
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            const subject = encodeURIComponent('HYROX Race Plan - Will & Ross');
+            const body = encodeURIComponent(document.getElementById('export-text').value);
+            
+            // Open default email client
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('export-modal');
+            if (event.target === modal) {
+                closeExportModal();
+            }
+        });
 
         // Update running pace inputs
         document.getElementById('speed-mph').addEventListener('input', function() {
